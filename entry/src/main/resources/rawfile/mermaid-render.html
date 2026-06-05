@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mermaid Diagram Renderer</title>
+  <style>
+    /* ── 基础重置 ── */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #FFFFFF;
+      font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    /* ── 渲染容器 ── */
+    #mermaid-container {
+      padding: 16px;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    /* ── 流程图节点 ── */
+    .diagram-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #1A1A1A;
+      margin-bottom: 16px;
+    }
+
+    .flow-graph {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .flow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .flow-node {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 80px;
+      min-height: 40px;
+      padding: 8px 16px;
+      border: 1px solid #E4E7EC;
+      border-radius: 8px;
+      background: #FFFFFF;
+      font-size: 13px;
+      color: #1A1A1A;
+      text-align: center;
+      word-break: break-word;
+    }
+
+    .flow-node.decision {
+      background: #EFF6FF;
+      border-color: #2563EB;
+      border-radius: 4px;
+      transform: rotate(0deg);
+      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+      min-width: 100px;
+      min-height: 60px;
+      padding: 16px 24px;
+    }
+
+    .flow-node.start-end {
+      border-radius: 20px;
+      background: #F8F9FA;
+      font-weight: 500;
+    }
+
+    .flow-node.process {
+      background: #FFFFFF;
+    }
+
+    .flow-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9CA3AF;
+      font-size: 20px;
+      padding: 4px 0;
+      user-select: none;
+    }
+
+    .flow-arrow.down::after {
+      content: '\2193';
+    }
+
+    .flow-arrow.right::after {
+      content: '\2192';
+    }
+
+    .flow-arrow-label {
+      font-size: 11px;
+      color: #6B7280;
+      margin: 0 4px;
+    }
+
+    /* ── 序列图 ── */
+    .sequence-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .seq-participants {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 8px;
+    }
+
+    .seq-participant {
+      padding: 8px 16px;
+      border: 1px solid #E4E7EC;
+      border-radius: 8px;
+      background: #F8F9FA;
+      font-size: 13px;
+      font-weight: 500;
+      color: #1A1A1A;
+      text-align: center;
+    }
+
+    .seq-message {
+      display: flex;
+      align-items: center;
+      padding: 4px 0;
+      font-size: 12px;
+      color: #6B7280;
+    }
+
+    .seq-message-line {
+      flex: 1;
+      height: 1px;
+      background: #E4E7EC;
+      position: relative;
+    }
+
+    .seq-message-label {
+      padding: 2px 8px;
+      font-size: 12px;
+      color: #1A1A1A;
+      white-space: nowrap;
+    }
+
+    /* ── 甘特图简化展示 ── */
+    .gantt-chart {
+      width: 100%;
+    }
+
+    .gantt-row {
+      display: flex;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #F8F9FA;
+    }
+
+    .gantt-label {
+      width: 120px;
+      font-size: 12px;
+      color: #1A1A1A;
+      flex-shrink: 0;
+    }
+
+    .gantt-bar-container {
+      flex: 1;
+      height: 20px;
+      background: #F8F9FA;
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .gantt-bar {
+      position: absolute;
+      height: 100%;
+      background: #2563EB;
+      border-radius: 4px;
+      opacity: 0.7;
+    }
+
+    /* ── 原始文本回退 ── */
+    .mermaid-raw {
+      color: #6B7280;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      background: #F8F9FA;
+      border: 1px solid #E4E7EC;
+      border-radius: 8px;
+      padding: 16px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .mermaid-raw-label {
+      font-size: 11px;
+      color: #9CA3AF;
+      margin-bottom: 8px;
+      font-family: sans-serif;
+    }
+
+    /* ── 加载状态 ── */
+    .mermaid-loading {
+      color: #9CA3AF;
+      font-size: 14px;
+      text-align: center;
+      padding: 32px;
+    }
+
+    /* ── 错误状态 ── */
+    .mermaid-error {
+      color: #6B7280;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      background: #F8F9FA;
+      border: 1px solid #E4E7EC;
+      border-radius: 8px;
+      padding: 16px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div id="mermaid-container">
+    <span class="mermaid-loading">等待渲染...</span>
+  </div>
+
+  <script>
+    /**
+     * 简化的 Mermaid 图表渲染器
+     *
+     * 由于 Mermaid.js 库体积较大（>1MB），此渲染器采用轻量级解析方案：
+     * 1. 识别图表类型（flowchart / sequenceDiagram / gantt / classDiagram）
+     * 2. 提取关键节点和关系
+     * 3. 以简化的可视化方式展示
+     * 4. 解析失败时回退到原始文本展示
+     */
+
+    /**
+     * 解析并渲染 Mermaid 文本
+     * @param {string} mermaidText - Mermaid 图表定义文本
+     * @returns {string} HTML 字符串
+     */
+    function renderMermaid(mermaidText) {
+      try {
+        var lines = mermaidText.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+        if (lines.length === 0) {
+          return '<div class="mermaid-loading">空图表</div>';
+        }
+
+        var diagramType = detectDiagramType(lines);
+
+        switch (diagramType) {
+          case 'flowchart':
+            return renderFlowchart(lines);
+          case 'sequenceDiagram':
+            return renderSequenceDiagram(lines);
+          case 'gantt':
+            return renderGantt(lines);
+          default:
+            return renderFallback(mermaidText, diagramType);
+        }
+      } catch (e) {
+        return renderFallback(mermaidText, 'unknown');
+      }
+    }
+
+    /**
+     * 检测图表类型
+     */
+    function detectDiagramType(lines) {
+      for (var i = 0; i < Math.min(lines.length, 3); i++) {
+        var line = lines[i].toLowerCase();
+        if (line.indexOf('flowchart') === 0 || line.indexOf('graph') === 0) return 'flowchart';
+        if (line.indexOf('sequencediagram') === 0) return 'sequenceDiagram';
+        if (line.indexOf('gantt') === 0) return 'gantt';
+        if (line.indexOf('classdiagram') === 0) return 'classDiagram';
+        if (line.indexOf('statediagram') === 0) return 'stateDiagram';
+        if (line.indexOf('pie') === 0) return 'pie';
+        if (line.indexOf('erdiagram') === 0) return 'erDiagram';
+      }
+      return 'unknown';
+    }
+
+    /**
+     * 渲染流程图
+     */
+    function renderFlowchart(lines) {
+      var nodes = {};
+      var edges = [];
+      var nodeOrder = [];
+
+      for (var i = 1; i < lines.length; i++) {
+        var line = lines[i];
+
+        // 跳过子图定义等复杂语法
+        if (line.indexOf('subgraph') === 0 || line === 'end') continue;
+        if (line.indexOf('style') === 0 || line.indexOf('classDef') === 0) continue;
+
+        // 解析节点连接：A --> B, A -->|label| B, A --- B
+        var arrowMatch = line.match(/^(\w+)([\[\(]\w*[\]\)])?\s*([-=.|>]+(?:\|[^|]*\|)?[-=.|>]*)\s*(\w+)([\[\(]\w*[\]\)])?/);
+        if (arrowMatch) {
+          var fromId = arrowMatch[1];
+          var fromShape = arrowMatch[2] || '';
+          var arrow = arrowMatch[3];
+          var toId = arrowMatch[4];
+          var toShape = arrowMatch[5] || '';
+
+          if (!nodes[fromId]) {
+            nodes[fromId] = { id: fromId, label: fromId, shape: fromShape };
+            nodeOrder.push(fromId);
+          }
+          if (!nodes[toId]) {
+            nodes[toId] = { id: toId, label: toId, shape: toShape };
+            nodeOrder.push(toId);
+          }
+
+          // 提取箭头标签
+          var labelMatch = arrow.match(/\|([^|]*)\|/);
+          var edgeLabel = labelMatch ? labelMatch[1].trim() : '';
+          edges.push({ from: fromId, to: toId, label: edgeLabel, arrow: arrow });
+          continue;
+        }
+
+        // 解析节点定义：A[Label], B(Label), C{Label}
+        var nodeMatch = line.match(/^(\w+)([\[\(\{>])([^\]\)\}]*)([\]\)\}<])/);
+        if (nodeMatch) {
+          var id = nodeMatch[1];
+          var label = nodeMatch[3].trim() || id;
+          var openBracket = nodeMatch[2];
+          nodes[id] = { id: id, label: label, shape: openBracket };
+          if (nodeOrder.indexOf(id) === -1) nodeOrder.push(id);
+          continue;
+        }
+      }
+
+      if (nodeOrder.length === 0) {
+        return renderFallback(lines.join('\n'), 'flowchart');
+      }
+
+      // 构建 HTML
+      var html = '<div class="diagram-title">Flowchart</div>';
+      html += '<div class="flow-graph">';
+
+      for (var i = 0; i < nodeOrder.length; i++) {
+        var nodeId = nodeOrder[i];
+        var node = nodes[nodeId];
+        var nodeClass = 'flow-node';
+
+        // 根据形状确定样式
+        if (node.shape === '{') nodeClass += ' decision';
+        else if (node.shape === '(' || node.shape === ')') nodeClass += ' start-end';
+
+        html += '<div class="flow-row">';
+        html += '<div class="' + nodeClass + '">' + escapeHtml(node.label) + '</div>';
+        html += '</div>';
+
+        // 查找从该节点出发的边
+        var outgoingEdges = edges.filter(function(e) { return e.from === nodeId; });
+        for (var j = 0; j < outgoingEdges.length; j++) {
+          var edge = outgoingEdges[j];
+          html += '<div class="flow-arrow down">';
+          if (edge.label) {
+            html += '<span class="flow-arrow-label">' + escapeHtml(edge.label) + '</span>';
+          }
+          html += '</div>';
+
+          // 目标节点
+          var targetNode = nodes[edge.to];
+          if (targetNode) {
+            var targetClass = 'flow-node';
+            if (targetNode.shape === '{') targetClass += ' decision';
+            else if (targetNode.shape === '(') targetClass += ' start-end';
+
+            html += '<div class="flow-row">';
+            html += '<div class="' + targetClass + '">' + escapeHtml(targetNode.label) + '</div>';
+            html += '</div>';
+          }
+        }
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    /**
+     * 渲染序列图
+     */
+    function renderSequenceDiagram(lines) {
+      var participants = [];
+      var messages = [];
+
+      for (var i = 1; i < lines.length; i++) {
+        var line = lines[i];
+
+        // 参与者定义
+        var partMatch = line.match(/^participant\s+(\w+)(?:\s+as\s+(.+))?/);
+        if (partMatch) {
+          participants.push({ id: partMatch[1], label: (partMatch[2] || partMatch[1]).trim() });
+          continue;
+        }
+
+        // 消息：A -> B: message, A --> B: message, A -->> B: message
+        var msgMatch = line.match(/^(\w+)\s*([-]+[>ox]?)\s*(\w+)\s*:\s*(.*)/);
+        if (msgMatch) {
+          messages.push({
+            from: msgMatch[1],
+            to: msgMatch[3],
+            label: msgMatch[4].trim(),
+            arrow: msgMatch[2]
+          });
+          // 自动添加未声明的参与者
+          if (participants.findIndex(function(p) { return p.id === msgMatch[1]; }) === -1) {
+            participants.push({ id: msgMatch[1], label: msgMatch[1] });
+          }
+          if (participants.findIndex(function(p) { return p.id === msgMatch[3]; }) === -1) {
+            participants.push({ id: msgMatch[3], label: msgMatch[3] });
+          }
+          continue;
+        }
+      }
+
+      if (participants.length === 0) {
+        return renderFallback(lines.join('\n'), 'sequenceDiagram');
+      }
+
+      var html = '<div class="diagram-title">Sequence Diagram</div>';
+      html += '<div class="sequence-diagram">';
+
+      // 参与者行
+      html += '<div class="seq-participants">';
+      for (var i = 0; i < participants.length; i++) {
+        html += '<div class="seq-participant">' + escapeHtml(participants[i].label) + '</div>';
+      }
+      html += '</div>';
+
+      // 消息行
+      for (var i = 0; i < messages.length; i++) {
+        var msg = messages[i];
+        html += '<div class="seq-message">';
+        html += '<span style="width:80px;text-align:right;padding-right:8px;font-size:12px;color:#1A1A1A;">' +
+          escapeHtml(msg.from) + '</span>';
+        html += '<div class="seq-message-line"></div>';
+        html += '<span class="seq-message-label">' + escapeHtml(msg.label) + '</span>';
+        html += '<div class="seq-message-line"></div>';
+        html += '<span style="width:80px;text-align:left;padding-left:8px;font-size:12px;color:#1A1A1A;">' +
+          escapeHtml(msg.to) + '</span>';
+        html += '</div>';
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    /**
+     * 渲染甘特图（简化版）
+     */
+    function renderGantt(lines) {
+      var title = 'Gantt Chart';
+      var tasks = [];
+      var sections = [];
+
+      for (var i = 1; i < lines.length; i++) {
+        var line = lines[i];
+
+        // 标题
+        var titleMatch = line.match(/^title\s+(.*)/);
+        if (titleMatch) {
+          title = titleMatch[1].trim();
+          continue;
+        }
+
+        // 段落
+        if (line.indexOf('section') === 0) {
+          sections.push(line.replace('section', '').trim());
+          continue;
+        }
+
+        // 任务：TaskName :done, id, start, end
+        var taskMatch = line.match(/^(.+?)\s*:\s*(.*)/);
+        if (taskMatch) {
+          var taskName = taskMatch[1].trim();
+          var taskDef = taskMatch[2].trim();
+          var isDone = taskDef.indexOf('done') !== -1;
+          var isActive = taskDef.indexOf('active') !== -1;
+          tasks.push({
+            name: taskName,
+            done: isDone,
+            active: isActive,
+            section: sections.length > 0 ? sections[sections.length - 1] : ''
+          });
+        }
+      }
+
+      if (tasks.length === 0) {
+        return renderFallback(lines.join('\n'), 'gantt');
+      }
+
+      var html = '<div class="diagram-title">' + escapeHtml(title) + '</div>';
+      html += '<div class="gantt-chart">';
+
+      for (var i = 0; i < tasks.length; i++) {
+        var task = tasks[i];
+        var leftPercent = Math.floor((i / tasks.length) * 30);
+        var widthPercent = Math.floor(60 / tasks.length) + 10;
+        var opacity = task.done ? '0.4' : (task.active ? '0.9' : '0.7');
+
+        html += '<div class="gantt-row">';
+        html += '<div class="gantt-label">' + escapeHtml(task.name) + '</div>';
+        html += '<div class="gantt-bar-container">';
+        html += '<div class="gantt-bar" style="left:' + leftPercent + '%;width:' + widthPercent + '%;opacity:' + opacity + ';"></div>';
+        html += '</div>';
+        html += '</div>';
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    /**
+     * 回退方案：显示原始文本
+     */
+    function renderFallback(text, type) {
+      var typeLabel = type !== 'unknown' ? type : 'Mermaid';
+      return '<div class="mermaid-raw">' +
+        '<div class="mermaid-raw-label">' + escapeHtml(typeLabel) + ' diagram</div>' +
+        escapeHtml(text) +
+        '</div>';
+    }
+
+    /**
+     * HTML 转义
+     */
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── 对外接口 ──
+
+    /**
+     * 外部调用入口
+     * 通过 window._renderContent(mermaidString) 调用
+     * @param {string} mermaidString - Mermaid 图表定义文本
+     */
+    window._renderContent = function(mermaidString) {
+      var container = document.getElementById('mermaid-container');
+      if (!mermaidString || mermaidString.trim().length === 0) {
+        container.innerHTML = '<span class="mermaid-loading">空图表</span>';
+        return;
+      }
+      container.innerHTML = renderMermaid(mermaidString);
+    };
+
+    /**
+     * 渲染 Mermaid 图表（内部函数也暴露到全局）
+     */
+    window.renderMermaid = renderMermaid;
+  </script>
+</body>
+</html>
