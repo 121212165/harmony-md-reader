@@ -1,0 +1,12 @@
+{
+  "name": "harmony-md-reader",
+  "version": "1.0.0",
+  "description": "鸿蒙手机 Markdown / HTML 本地阅读器",
+  "main": "",
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "@ohos/hypium": "1.0.18"
+  }
+}
