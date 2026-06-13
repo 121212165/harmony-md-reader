@@ -1,21 +1,19 @@
 # First-Principles Reconstruction: harmony-md-reader
 
-> Applied Elon Musk's first-principles thinking: break to fundamental truths, rebuild from zero.
+> Applied Elon Musk's first-principles thinking.
 
 ## Core Problem
 
-HarmonyOS phones have no built-in way to render Markdown files.
+HarmonyOS phones have no built-in Markdown/HTML file renderer.
 
-## First Principles Breakdown
+## Key Finding
 
-1. The phone already has a browser engine. ArkUI Web component can render HTML.
-2. The entire custom rendering pipeline (4,000+ lines) solves a problem the platform already solves.
-3. More than half the codebase is dead code.
+The phone already has a browser engine. ArkUI Web component renders HTML natively. The entire custom 4,000+ line pipeline solves what the platform already solves.
 
-## Reconstruction Blueprint
+## Dead Code
 
-450 lines total. Everything else is deleted.
+7 unused components, 8 unused renderers, duplicate types (2 ASTNode, 2 TocEntry, 2 FileInfo, 2 SearchMatch).
 
-## Musk\'s Razor
+## Musk's Razor
 
-Cut custom parsers. Cut unused component library. Cut duplicate types. Ship 450 lines.
+Rebuild: 450 lines. EntryAbility (50) + HomePage (30) + ReaderPage (100) + web-template.html (200) + module.json5 (70). Ship marked.js + highlight.js + KaTeX + Mermaid.js in one WebView. Delete everything else.
