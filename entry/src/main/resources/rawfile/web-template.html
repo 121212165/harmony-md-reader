@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MD Reader</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      color: #1A1A1A;
+      line-height: 1.8;
+      padding: 16px;
+      word-wrap: break-word;
+      -webkit-text-size-adjust: 100%;
+    }
+    h1 { font-size: 24px; font-weight: bold; margin: 24px 0 16px; }
+    h2 { font-size: 20px; font-weight: bold; margin: 20px 0 12px; }
+    h3 { font-size: 16px; font-weight: bold; margin: 16px 0 8px; }
+    h4, h5, h6 { font-size: 14px; font-weight: bold; margin: 12px 0 8px; }
+    p { margin: 0 0 16px; font-size: 14px; }
+    a { color: #2563EB; text-decoration: underline; }
+    img { max-width: 100%; border-radius: 8px; margin: 8px 0; }
+    blockquote {
+      border-left: 3px solid #2563EB;
+      background: #EFF6FF;
+      padding: 8px 16px;
+      margin: 0 0 16px;
+      border-radius: 0 8px 8px 0;
+      color: #6B7280;
+    }
+    pre {
+      background: #282C34;
+      color: #ABB2BF;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 0 0 16px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    pre code { background: none; padding: 0; font-size: inherit; }
+    code {
+      background: #F8F9FA;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 16px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #E4E7EC;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th { background: #F8F9FA; font-weight: bold; }
+    ul, ol { padding-left: 24px; margin: 0 0 16px; }
+    li { margin: 4px 0; font-size: 14px; }
+    hr { border: none; border-top: 1px solid #E4E7EC; margin: 24px 0; }
+    .task-list-item { list-style: none; margin-left: -24px; }
+    .task-list-item input { margin-right: 8px; }
+    .mermaid-container { margin: 0 0 16px; }
+    .math-block { text-align: center; margin: 0 0 16px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <div id="content"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: false, theme: 'default' });
+
+    marked.setOptions({
+      highlight: function(code, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+          return hljs.highlight(code, { language: lang }).value;
+        }
+        return hljs.highlightAuto(code).value;
+      },
+      gfm: true,
+      breaks: true
+    });
+
+    var renderer = new marked.Renderer();
+
+    renderer.listitem = function(text) {
+      if (text.startsWith('[ ] ') || text.startsWith('[x] ') || text.startsWith('[X] ')) {
+        var checked = text.startsWith('[x] ') || text.startsWith('[X] ');
+        var content = text.substring(4);
+        return '<li class="task-list-item"><input type="checkbox" disabled ' +
+          (checked ? 'checked' : '') + '> ' + content + '</li>\n';
+      }
+      return '<li>' + text + '</li>\n';
+    };
+
+    marked.use({ renderer: renderer });
+
+    window._renderContent = function(content, isHtml) {
+      var container = document.getElementById('content');
+      if (!content || content.trim().length === 0) {
+        container.innerHTML = '<p style="color:#9CA3AF;">空文件</p>';
+        return;
+      }
+
+      if (isHtml) {
+        container.innerHTML = content;
+      } else {
+        var html = marked.parse(content);
+        container.innerHTML = html;
+      }
+
+      document.querySelectorAll('pre code').forEach(function(block) {
+        hljs.highlightElement(block);
+      });
+
+      document.querySelectorAll('.language-mermaid, .mermaid').forEach(function(el) {
+        var code = el.textContent;
+        var div = document.createElement('div');
+        div.className = 'mermaid-container';
+        el.parentNode.replaceWith(div);
+        mermaid.render('mermaid-' + Date.now(), code).then(function(result) {
+          div.innerHTML = result.svg;
+        }).catch(function() {
+          div.innerHTML = '<pre>' + code + '</pre>';
+        });
+      });
+
+      document.querySelectorAll('.language-math, .language-latex').forEach(function(el) {
+        var tex = el.textContent;
+        var div = document.createElement('div');
+        div.className = 'math-block';
+        el.parentNode.replaceWith(div);
+        try { katex.render(tex, div, { displayMode: true, throwOnError: false }); }
+        catch(e) { div.textContent = tex; }
+      });
+
+      document.querySelectorAll('p, li, td, th, blockquote').forEach(function(el) {
+        var html = el.innerHTML;
+        if (html.indexOf('$$') === -1 && html.indexOf('$') === -1) return;
+        html = html.replace(/\$\$([\s\S]+?)\$\$/g, function(m, tex) {
+          try { return katex.renderToString(tex, { displayMode: true, throwOnError: false }); }
+          catch(e) { return m; }
+        });
+        html = html.replace(/\$([^\$\n]+?)\$/g, function(m, tex) {
+          try { return katex.renderToString(tex, { displayMode: false, throwOnError: false }); }
+          catch(e) { return m; }
+        });
+        el.innerHTML = html;
+      });
+    };
+  </script>
+</body>
+</html>
