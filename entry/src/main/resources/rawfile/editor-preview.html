@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview</title>
+  <link rel="stylesheet" href="./lib/shared.css">
+  <link rel="stylesheet" href="./lib/atom-one-dark.min.css">
+  <style>
+    body { padding: 12px; }
+    h1 { font-size: 22px; font-weight: bold; margin: 20px 0 12px; }
+    h2 { font-size: 18px; font-weight: bold; margin: 16px 0 10px; }
+    h3 { font-size: 15px; font-weight: bold; margin: 12px 0 6px; }
+    h4, h5, h6 { font-size: 13px; font-weight: bold; margin: 10px 0 6px; }
+    p { margin: 0 0 12px; font-size: 13px; }
+    li { margin: 3px 0; font-size: 13px; }
+    table { margin: 0 0 12px; font-size: 12px; }
+    th, td { padding: 6px 8px; }
+    blockquote { padding: 6px 12px; margin: 0 0 12px; font-size: 13px; }
+    pre { padding: 12px; margin: 0 0 12px; font-size: 12px; }
+    code { padding: 2px 4px; font-size: 12px; }
+    hr { margin: 16px 0; }
+    ul, ol { margin: 0 0 12px; }
+    .empty { color: #9CA3AF; text-align: center; padding: 40px 0; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="preview"></div>
+  <script src="./lib/marked.min.js"></script>
+  <script src="./lib/highlight.min.js"></script>
+  <script>
+    var preview = document.getElementById('preview');
+
+    marked.setOptions({
+      highlight: function(code, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+          return hljs.highlight(code, { language: lang }).value;
+        }
+        return hljs.highlightAuto(code).value;
+      },
+      gfm: true,
+      breaks: true
+    });
+
+    window.addEventListener('message', function(event) {
+      var data = event.data;
+      if (data && data.type === 'md') {
+        var content = data.content || '';
+        if (content.trim().length === 0) {
+          preview.innerHTML = '<div class="empty">开始编辑...</div>';
+          return;
+        }
+        preview.innerHTML = marked.parse(content);
+        document.querySelectorAll('pre code').forEach(function(block) {
+          hljs.highlightElement(block);
+        });
+      }
+    });
+  </script>
+</body>
+</html>

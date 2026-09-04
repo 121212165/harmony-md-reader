@@ -1,0 +1,43 @@
+/* Shared styles for MD Forge reader and editor previews */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  color: #1A1A1A;
+  line-height: 1.8;
+  word-wrap: break-word;
+  -webkit-text-size-adjust: 100%;
+}
+a { color: #2563EB; text-decoration: underline; }
+img { max-width: 100%; border-radius: 8px; margin: 8px 0; }
+blockquote {
+  border-left: 3px solid #2563EB;
+  background: #EFF6FF;
+  padding: 8px 16px;
+  margin: 0 0 16px;
+  border-radius: 0 8px 8px 0;
+  color: #6B7280;
+}
+pre {
+  background: #282C34;
+  color: #ABB2BF;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+code {
+  background: #F8F9FA;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+table { width: 100%; border-collapse: collapse; margin: 0 0 16px; }
+th, td { border: 1px solid #E4E7EC; padding: 8px 12px; text-align: left; }
+th { background: #F8F9FA; font-weight: bold; }
+ul, ol { padding-left: 24px; margin: 0 0 16px; }
+li { margin: 4px 0; }
+hr { border: none; border-top: 1px solid #E4E7EC; margin: 24px 0; }

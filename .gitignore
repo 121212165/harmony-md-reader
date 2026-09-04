@@ -1,0 +1,7 @@
+build/
+node_modules/
+.hvigor/
+*.har
+*.hap
+*.app
+oh_modules/

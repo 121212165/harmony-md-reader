@@ -1,7 +1,8 @@
 {
+  "modelVersion": "5.0.0",
   "name": "harmony-md-reader",
-  "version": "1.0.0",
   "description": "鸿蒙手机 Markdown / HTML 本地阅读器",
+  "version": "1.0.0",
   "main": "",
   "author": "",
   "license": "MIT",

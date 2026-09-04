@@ -1,6 +1,7 @@
 {
   "src": [
     "pages/HomePage",
-    "pages/ReaderPage"
+    "pages/ReaderPage",
+    "pages/EditorPage"
   ]
 }

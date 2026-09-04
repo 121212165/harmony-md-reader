@@ -2,9 +2,11 @@ import { AbilityConstant, UIAbility, Want } from '@kit.AbilityKit'
 import { window } from '@kit.ArkUI'
 import { hilog } from '@kit.PerformanceAnalysisKit'
 import { router } from '@kit.ArkUI'
+import { emitter } from '@kit.BasicServicesKit'
 
 const TAG: string = 'EntryAbility'
 const DOMAIN: number = 0xFF00
+const EVENT_NAVIGATE: number = 0x1001
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
@@ -16,7 +18,7 @@ export default class EntryAbility extends UIAbility {
   onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     this.extractFileFromWant(want, '分享')
     try {
-      router.events.emit({ url: 'pages/ReaderPage', name: 'navigateToReader' })
+      emitter.emit({ eventId: EVENT_NAVIGATE })
     } catch (e) {
       hilog.error(DOMAIN, TAG, 'emit navigateToReader failed: %{public}s', JSON.stringify(e))
     }
@@ -27,9 +29,6 @@ export default class EntryAbility extends UIAbility {
       if (err) return
       const pendingUri = AppStorage.get<string>('pendingFileUri') ?? ''
       if (pendingUri.length > 0) {
-        router.events.on('navigateToReader', () => {
-          router.pushUrl({ url: 'pages/ReaderPage' })
-        })
         router.pushUrl({ url: 'pages/ReaderPage' })
       }
     })

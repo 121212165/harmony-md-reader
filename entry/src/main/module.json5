@@ -2,10 +2,11 @@
   "module": {
     "name": "entry",
     "type": "entry",
-    "description": "MD Reader - Markdown & HTML 阅读器",
+    "description": "MD Forge - Markdown 阅读编辑器",
     "mainElement": "EntryAbility",
     "deviceTypes": [
-      "phone"
+      "phone",
+      "tablet"
     ],
     "deliveryWithInstall": true,
     "installationFree": false,
@@ -14,7 +15,7 @@
       {
         "name": "EntryAbility",
         "srcEntry": "./ets/entryability/EntryAbility.ets",
-        "description": "MD Reader 主入口",
+        "description": "MD Forge 主入口",
         "icon": "$media:app_icon",
         "label": "$string:app_name",
         "startWindowIcon": "$media:app_icon",
@@ -39,35 +40,19 @@
             "uris": [
               {
                 "scheme": "file",
-                "fileExtension": ".md"
+                "utd": "general.markdown"
               },
               {
                 "scheme": "file",
-                "fileExtension": ".markdown"
-              },
-              {
-                "scheme": "file",
-                "fileExtension": ".html"
-              },
-              {
-                "scheme": "file",
-                "fileExtension": ".htm"
+                "utd": "general.html"
               },
               {
                 "scheme": "content",
-                "fileExtension": ".md"
+                "utd": "general.markdown"
               },
               {
                 "scheme": "content",
-                "fileExtension": ".markdown"
-              },
-              {
-                "scheme": "content",
-                "fileExtension": ".html"
-              },
-              {
-                "scheme": "content",
-                "fileExtension": ".htm"
+                "utd": "general.html"
               }
             ]
           }
@@ -76,7 +61,12 @@
     ],
     "requestPermissions": [
       {
-        "name": "ohos.permission.READ_MEDIA"
+        "name": "ohos.permission.READ_MEDIA",
+        "reason": "$string:permission_read_media_reason",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "always"
+        }
       }
     ]
   }

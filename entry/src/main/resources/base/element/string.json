@@ -1,8 +1,8 @@
 {
   "string": [
     {
-      "name": "app_name",
-      "value": "MD Reader"
+      "name": "permission_read_media_reason",
+      "value": "用于读取本地 Markdown 和 HTML 文件"
     }
   ]
 }
